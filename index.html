@@ -1,150 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Training Feedback Form</title>
-
-<style>
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f6f8;
-}
-.container{
-    max-width:600px;
-    margin:40px auto;
-    background:#fff;
-    padding:25px;
-    border-radius:8px;
-    box-shadow:0 0 10px rgba(0,0,0,0.1);
-}
-h2{
-    text-align:center;
-}
-label{
-    font-weight:bold;
-    margin-top:10px;
-    display:block;
-}
-input, select, button{
-    width:100%;
-    padding:10px;
-    margin-top:5px;
-}
-.question{
-    margin-top:15px;
-}
-button{
-    background:#0b5ed7;
-    color:white;
-    border:none;
-    cursor:pointer;
-    margin-top:20px;
-}
-button:hover{
-    background:#084298;
-}
-.success{
-    color:green;
-    text-align:center;
-}
-.error{
-    color:red;
-    text-align:center;
-}
-</style>
+  <title>Training Registration & Feedback Form</title>
+  <meta charset="UTF-8" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f9fc; }
+    h2 { color: #0d47a1; text-align: center; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, select, textarea {
+      width: 100%; padding: 8px; margin-top: 5px;
+      border-radius: 5px; border: 1px solid #ccc;
+    }
+    .question { margin-top: 10px; }
+    button {
+      margin-top: 20px; background: #0d47a1; color: #fff;
+      padding: 10px; border: none; border-radius: 5px;
+      width: 100%; font-size: 16px; cursor: pointer;
+    }
+    button:hover { background: #1565c0; }
+    .message { margin-top: 15px; text-align: center; font-weight: bold; }
+  </style>
 </head>
-
 <body>
-<div class="container">
-<h2>Training Feedback Form</h2>
 
-<form id="feedbackForm">
+<h2>Training Registration & Feedback Form</h2>
 
-<label>Name</label>
-<input type="text" name="name" required>
+<form id="form">
+  <label>Name</label>
+  <input type="text" id="name" required>
 
-<label>Department</label>
-<input type="text" name="department" required>
+  <label>Email</label>
+  <input type="email" id="email" required>
 
-<label>Designation</label>
-<input type="text" name="designation" required>
+  <label>Department</label>
+  <input type="text" id="department" required>
 
-<label>Email</label>
-<input type="email" name="email" required>
+  <label>Designation</label>
+  <input type="text" id="designation">
 
-<label>Training</label>
-<select name="training" id="trainingSelect" required>
-<option value="">Loading trainings...</option>
-</select>
+  <label>Training Name</label>
+  <select id="training" required>
+    <option value="">Loading trainings...</option>
+  </select>
 
-<div id="questions"></div>
+  <div id="questions"></div>
 
-<button type="submit">Submit Feedback</button>
+  <button type="submit">Submit</button>
+  <div class="message" id="msg"></div>
 </form>
 
-<p id="msg"></p>
-</div>
-
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlaszm-Yjx5U7T-zGJUkoY06rXi8hIK-cGRqmUotFJjpTa5PAAXKCxFEk1im1IFKe8Ig/exec";
+/* 🔴 ONLY THIS URL IS USED */
+const WEB_APP_URL =
+"https://script.google.com/macros/s/AKfycbwz2p5lDMTaC7OF65tPcrD0enYrdE9GeCkLPphU9irjiDm0275KlsylnsU1xWHFVj9hrQ/exec";
 
 /* Load Trainings */
-fetch(SCRIPT_URL + "?action=getTrainings")
-.then(res => res.json())
-.then(data => {
-    const sel = document.getElementById("trainingSelect");
-    sel.innerHTML = '<option value="">Select Training</option>';
+fetch(WEB_APP_URL + "?action=getTrainings")
+  .then(r => r.json())
+  .then(data => {
+    const sel = document.getElementById("training");
+    sel.innerHTML = '<option value="">-- Select Training --</option>';
     data.forEach(t => {
-        sel.innerHTML += `<option value="${t}">${t}</option>`;
+      const o = document.createElement("option");
+      o.value = t.Training_Name;
+      o.textContent = t.Training_Name;
+      sel.appendChild(o);
     });
-})
-.catch(() => {
-    document.getElementById("trainingSelect").innerHTML =
-        '<option value="">Failed to load trainings</option>';
-});
+  })
+  .catch(() => {
+    document.getElementById("msg").innerText = "Failed to load trainings";
+  });
 
-/* Load Questions on training change */
-document.getElementById("trainingSelect").addEventListener("change", function(){
-    const training = this.value;
-    if(!training) return;
+/* Load Questions */
+document.getElementById("training").addEventListener("change", function () {
+  const training = this.value;
+  const box = document.getElementById("questions");
+  box.innerHTML = "";
 
-    fetch(SCRIPT_URL + "?action=getQuestions&training=" + encodeURIComponent(training))
-    .then(res => res.json())
-    .then(qs => {
-        const div = document.getElementById("questions");
-        div.innerHTML = "";
-        qs.forEach(q => {
-            div.innerHTML += `
-            <div class="question">
-                <label>${q.text}</label>
-                <input type="text" name="q_${q.id}" required>
-            </div>`;
-        });
+  if (!training) return;
+
+  fetch(WEB_APP_URL + "?action=getQuestions&training=" + encodeURIComponent(training))
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(q => {
+        const d = document.createElement("div");
+        d.className = "question";
+
+        if (q.Question_Type === "Rating") {
+          d.innerHTML = `
+            <label>${q.Question_Text}</label>
+            <select data-id="${q.Question_ID}" required>
+              <option value="">Select</option>
+              <option>1</option><option>2</option><option>3</option>
+              <option>4</option><option>5</option>
+            </select>`;
+        } else {
+          d.innerHTML = `
+            <label>${q.Question_Text}</label>
+            <textarea data-id="${q.Question_ID}" required></textarea>`;
+        }
+        box.appendChild(d);
+      });
     });
 });
 
 /* Submit Form */
-document.getElementById("feedbackForm").addEventListener("submit", function(e){
-    e.preventDefault();
+document.getElementById("form").addEventListener("submit", function (e) {
+  e.preventDefault();
 
-    const formData = new FormData(this);
-
-    fetch(SCRIPT_URL, {
-        method: "POST",
-        body: formData
-    })
-    .then(res => res.text())
-    .then(() => {
-        document.getElementById("msg").innerHTML =
-            "<p class='success'>Feedback submitted successfully</p>";
-        this.reset();
-        document.getElementById("questions").innerHTML="";
-    })
-    .catch(err => {
-        document.getElementById("msg").innerHTML =
-            "<p class='error'>Submission failed</p>";
-        console.error(err);
+  const feedback = [];
+  document.querySelectorAll("#questions select, #questions textarea")
+    .forEach(el => {
+      feedback.push({
+        id: el.dataset.id,
+        answer: el.value
+      });
     });
+
+  const payload = {
+    name: name.value,
+    email: email.value,
+    department: department.value,
+    designation: designation.value,
+    training: training.value,
+    feedback: feedback
+  };
+
+  document.getElementById("msg").innerText = "Submitting...";
+
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.text())
+  .then(t => {
+    document.getElementById("msg").innerText = t;
+    if (t.includes("✔")) {
+      document.getElementById("form").reset();
+      document.getElementById("questions").innerHTML = "";
+    }
+  })
+  .catch(() => {
+    document.getElementById("msg").innerText = "Submission failed";
+  });
 });
 </script>
 
