@@ -1,106 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Training Registration & Feedback Form</title>
+  <title>Training Registration Form</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#0b2a4a; padding:30px; }
-    .card { max-width:700px; margin:auto; background:#fff; border-radius:12px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-    h2 { color:#0b2a4a; text-align:center; }
-    label { display:block; margin-top:15px; font-weight:bold; }
-    input, select, textarea { width:100%; padding:10px; margin-top:5px; border-radius:6px; border:1px solid #ccc; }
-    button { margin-top:25px; width:100%; padding:12px; background:#f57c00; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
-    button:hover { background:#e66b00; }
-    .msg { margin-top:15px; text-align:center; color:green; font-weight:bold; }
-    .error { color:red; }
+    body { font-family: Arial, sans-serif; background: #0b2a4a; padding: 30px; }
+    .card { max-width: 700px; margin: auto; background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);}
+    h2 { color: #0b2a4a; text-align: center; }
+    label { font-weight: bold; margin-top: 15px; display: block; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
+    button { margin-top: 25px; width: 100%; padding: 12px; background: #f57c00; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    button:hover { background: #e66b00; }
+    .msg { margin-top: 15px; text-align: center; color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
   <div class="card">
     <h2>Training Registration & Feedback Form</h2>
 
-    <form id="registrationForm">
-      <label>Name</label>
-      <input type="text" name="name" required>
+    <label>Name</label>
+    <input type="text" id="name" required>
 
-      <label>Email</label>
-      <input type="email" name="email" required>
-      <small style="color:#555; font-size:13px;">E-Certificate will be sent to this email</small>
+    <label>Email</label>
+    <input type="email" id="email" required>
+    <small style="color:#555; font-size:13px;">E-Certificate will be sent to this email</small>
 
-      <label>Department</label>
-      <input type="text" name="department" required>
+    <label>Department</label>
+    <input type="text" id="department" required>
 
-      <label>Designation</label>
-      <input type="text" name="designation">
+    <label>Designation</label>
+    <input type="text" id="designation">
 
-      <label>Training Name</label>
-      <select name="training" id="training" required>
-        <option value="">Loading trainings...</option>
-      </select>
+    <label>Training Name</label>
+    <select id="training">
+      <option value="">Loading trainings...</option>
+    </select>
 
-      <div id="feedbackQuestions" style="margin-top:20px;"></div>
+    <div id="feedbackSection" style="margin-top:20px; display:none;">
+      <h3>Feedback Questions</h3>
+      <div id="feedbackQuestions"></div>
+    </div>
 
-      <button type="submit">Submit</button>
-    </form>
-
+    <button id="submitBtn">Submit</button>
     <div class="msg" id="msg"></div>
   </div>
 
 <script>
-  const baseURL = "https://script.google.com/macros/s/AKfycbxKUk9XXnodSkNU1lyaRpdqAYLXILsRdGC0Jn3BPjcjuQPy0oC87QwOwi90H8gW0X8bjQ/exec";
-  const msgDiv = document.getElementById('msg');
+  const baseURL = "https://script.google.com/macros/s/AKfycbyKyJkOwhpQODNQ6SxKeL0gRakAf3327G_B1ZuwxdMLgUFKEPVy-jjIcDVQ1qp8SEurqw/exec";
+  const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
 
-  // Load Trainings
-  fetch(baseURL + "?action=getTrainings")
-    .then(res => res.json())
-    .then(data => {
-      const ddl = document.getElementById('training');
-      ddl.innerHTML = '<option value="">-- Select Training --</option>';
-      data.forEach(t => ddl.add(new Option(t,t)));
-    })
-    .catch(err => { msgDiv.className='msg error'; msgDiv.innerText='Failed to load trainings'; console.error(err); });
+  function showError(msg){ const m=document.getElementById('msg'); m.className='msg error'; m.innerText=msg; }
 
-  // Load Feedback Questions on Training Change
-  document.getElementById('training').addEventListener('change', function(){
-    const training = this.value;
-    const container = document.getElementById('feedbackQuestions');
-    container.innerHTML = '';
-    if(!training) return;
-
-    fetch(baseURL + "?action=getQuestions&training=" + encodeURIComponent(training))
+  // Load trainings
+  function loadTrainings(){
+    fetch(baseURL + "?action=getTrainings")
       .then(res => res.json())
-      .then(questions => {
-        questions.forEach((q,i) => {
-          const div = document.createElement('div');
-          div.innerHTML = `<label>${q.Question_Text}</label>
-                           <select name="fb${i}" required>
-                             <option value="">Select rating</option>
-                             <option value="1">1</option>
-                             <option value="2">2</option>
-                             <option value="3">3</option>
-                             <option value="4">4</option>
-                             <option value="5">5</option>
-                           </select>`;
-          container.appendChild(div);
+      .then(data => {
+        const ddl = document.getElementById('training');
+        ddl.innerHTML = '<option value="">-- Select Training --</option>';
+        data.forEach(t => {
+          let opt = document.createElement('option');
+          opt.value = t.id;      // save ID
+          opt.textContent = t.name; // show Name
+          ddl.appendChild(opt);
         });
       })
-      .catch(err => { msgDiv.className='msg error'; msgDiv.innerText='Failed to load questions'; console.error(err); });
-  });
+      .catch(err => showError("Failed to load trainings: " + err));
+  }
 
-  // Submit Form using FormData (CORS-safe)
-  document.getElementById('registrationForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    msgDiv.className='msg'; msgDiv.innerText='Submitting...';
+  // Load feedback questions
+  function loadFeedbackQuestions(trainingID){
+    const section = document.getElementById('feedbackSection');
+    const container = document.getElementById('feedbackQuestions');
+    container.innerHTML=''; section.style.display='none';
+    if(!trainingID) return;
 
-    fetch(baseURL, { method:'POST', body:new FormData(this) })
-      .then(res => res.text())
-      .then(msg => {
-        msgDiv.innerText = msg;
-        if(msg.includes('✔')) this.reset();
-        document.getElementById('feedbackQuestions').innerHTML='';
+    fetch(baseURL + "?action=getQuestions&training=" + trainingID)
+      .then(res=>res.json())
+      .then(questions=>{
+        questions.forEach((q,i)=>{
+          const div=document.createElement('div');
+          div.innerHTML = `<label>${q.Question_Text}</label>` +
+                          (q.Question_Type==='Rating' ? 
+                           `<select id='fb${i}'><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>` :
+                           `<textarea id='fb${i}'></textarea>`);
+          container.appendChild(div);
+        });
+        section.style.display='block';
       })
-      .catch(err => { msgDiv.className='msg error'; msgDiv.innerText='Submission failed'; console.error(err); });
+      .catch(err=>showError("Failed to load questions: "+err));
+  }
+
+  document.getElementById('training').addEventListener('change', function(){
+    loadFeedbackQuestions(this.value);
   });
+
+  // Submit form
+  document.getElementById('submitBtn').addEventListener('click', function(){
+    const obj = {
+      name:document.getElementById('name').value.trim(),
+      email:document.getElementById('email').value.trim(),
+      department:document.getElementById('department').value.trim(),
+      designation:document.getElementById('designation').value.trim(),
+      training:document.getElementById('training').value,
+      feedback:[]
+    };
+
+    if(!obj.name || !obj.email || !obj.department || !obj.training){ showError("Please fill all required fields."); return; }
+
+    document.querySelectorAll('#feedbackQuestions select,#feedbackQuestions textarea').forEach((el,i)=>{ obj.feedback.push({id:'Q'+i, answer:el.value}); });
+
+    const msg=document.getElementById('msg'); msg.className='msg'; msg.innerText='Submitting...';
+
+    fetch(baseURL,{
+      method:'POST',
+      body: new URLSearchParams({
+        name: obj.name,
+        email: obj.email,
+        department: obj.department,
+        designation: obj.designation,
+        training: obj.training,
+        ...obj.feedback.reduce((acc,f)=>{ acc[f.id]=f.answer; return acc; },{})
+      })
+    })
+    .then(res=>res.text())
+    .then(text=>{ msg.className='msg'; msg.innerText=text; if(text.includes('✔')) document.getElementById('registrationForm')?.reset(); })
+    .catch(err=>showError("Submission failed: "+err));
+  });
+
+  // Initialize
+  loadTrainings();
 </script>
 </body>
 </html>
