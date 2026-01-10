@@ -1,35 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Training Registration & Feedback Form</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0b2a4a; padding:30px; }
+    .card { max-width:700px; margin:auto; background:#fff; border-radius:12px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+    h2 { text-align:center; color:#0b2a4a; }
+    label { display:block; margin-top:15px; font-weight:bold; }
+    input, select, textarea { width:100%; padding:10px; margin-top:5px; border-radius:6px; border:1px solid #ccc; }
+    button { margin-top:25px; width:100%; padding:12px; background:#f57c00; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
+    button:hover { background:#e66b00; }
+    .msg { margin-top:15px; text-align:center; font-weight:bold; color:green; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>Training Registration & Feedback Form</h2>
+
+  <label>Name</label>
+  <input type="text" id="name" required>
+
+  <label>Email</label>
+  <input type="email" id="email" required>
+  <small style="font-size:13px;">E-Certificate will be sent to this email</small>
+
+  <label>Department</label>
+  <input type="text" id="department" required>
+
+  <label>Designation</label>
+  <input type="text" id="designation">
+
+  <label>Training Name</label>
+  <select id="training"><option>Loading trainings...</option></select>
+
+  <div id="feedbackSection" style="margin-top:20px; display:none;">
+    <h3>Feedback Questions</h3>
+    <div id="feedbackQuestions"></div>
+  </div>
+
+  <button id="submitBtn">Submit</button>
+  <div class="msg" id="msg"></div>
+</div>
+
 <script>
-const baseURL = "https://script.google.com/macros/s/YOUR_EXEC_ID/exec";
+const msgEl = document.getElementById('msg');
+// Replace this with your deployed Apps Script /exec URL
+const baseURL = "YOUR_EXEC_URL";  
+
+function showMsg(text,isError=false){ 
+  msgEl.innerText=text; 
+  msgEl.style.color=isError?'red':'green'; 
+}
 
 // Load trainings
-function loadTrainings() {
+function loadTrainings(){
   fetch(baseURL+"?action=getTrainings")
-    .then(res => res.json())
-    .then(data => {
-      const ddl = document.getElementById('training');
-      ddl.innerHTML = '<option value="">-- Select Training --</option>';
-      data.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t; opt.textContent = t;
-        ddl.appendChild(opt);
+    .then(res=>res.json())
+    .then(data=>{
+      const ddl=document.getElementById('training');
+      ddl.innerHTML='<option value="">-- Select Training --</option>';
+      data.forEach(t=>{
+        const opt=document.createElement('option'); opt.value=t; opt.textContent=t; ddl.appendChild(opt);
       });
     })
-    .catch(err => alert("Failed to load trainings: "+err));
+    .catch(err=>showMsg('Failed to load trainings: '+err,true));
 }
 
 // Load feedback questions
-document.getElementById('training').addEventListener('change', function(){
-  const training = this.value;
-  const container = document.getElementById('feedbackQuestions');
+document.getElementById('training').addEventListener('change',function(){
+  const training=this.value;
+  const container=document.getElementById('feedbackQuestions');
   container.innerHTML='';
-  if(!training) return;
+  if(!training){ document.getElementById('feedbackSection').style.display='none'; return; }
 
   fetch(baseURL+"?action=getQuestions&training="+encodeURIComponent(training))
-    .then(res => res.json())
-    .then(questions => {
+    .then(res=>res.json())
+    .then(questions=>{
+      if(!questions || questions.length===0){ container.innerHTML='No questions'; return; }
       questions.forEach((q,i)=>{
-        const div = document.createElement('div');
-        if(q.Question_Type=='Rating'){
+        const div=document.createElement('div');
+        if(q.Question_Type==='Rating'){
           div.innerHTML=`<label>${q.Question_Text}</label>
             <select id='fb${i}' required>
               <option value="">-- Select Rating --</option>
@@ -47,30 +98,35 @@ document.getElementById('training').addEventListener('change', function(){
       });
       document.getElementById('feedbackSection').style.display='block';
     })
-    .catch(err => alert("Failed to load questions: "+err));
+    .catch(err=>showMsg('Failed to load questions: '+err,true));
 });
 
-// Submit
-document.getElementById('submitBtn').addEventListener('click', function(){
-  const obj = {
+// Submit participant + feedback
+document.getElementById('submitBtn').addEventListener('click',function(){
+  const obj={
     name: document.getElementById('name').value.trim(),
     email: document.getElementById('email').value.trim(),
     department: document.getElementById('department').value.trim(),
     designation: document.getElementById('designation').value.trim(),
     training: document.getElementById('training').value,
-    feedback: Array.from(document.querySelectorAll('#feedbackQuestions select,#feedbackQuestions textarea')).map((el,i)=>({id:'Q'+i, answer:el.value}))
+    feedback: Array.from(document.querySelectorAll('#feedbackQuestions select,#feedbackQuestions textarea')).map((el,i)=>({id:'Q'+i,answer:el.value}))
   };
 
-  fetch(baseURL, {
+  if(!obj.name || !obj.email || !obj.department || !obj.training){ showMsg('Please fill all required fields',true); return; }
+
+  showMsg('Submitting...');
+  fetch(baseURL,{
     method:'POST',
     body: JSON.stringify(obj),
     headers:{'Content-Type':'application/json'}
   })
-  .then(res => res.text())
-  .then(msg => alert(msg))
-  .catch(err => alert("Submission failed: "+err));
+  .then(res=>res.text())
+  .then(msg=>showMsg(msg))
+  .catch(err=>showMsg('Submission failed: '+err,true));
 });
 
-// Init
+// Initialize
 loadTrainings();
 </script>
+</body>
+</html>
