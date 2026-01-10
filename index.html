@@ -41,12 +41,9 @@
   </form>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKlDTQ6gu0XlzOSRyK4Nm2eJGiwjPROdoRBZcVpKhZBA578A-AXeGnlEn6W2b-OEtiGw/exec";
-
-    async function fetchTrainings() {
-      try {
-        const res = await fetch(`${WEB_APP_URL}?action=getTrainings`);
-        const data = await res.json();
+    // ===== Use google.script.run for Apps Script internal calls =====
+    function loadTrainings() {
+      google.script.run.withSuccessHandler(function(data){
         const select = document.getElementById('trainingSelect');
         select.innerHTML = '<option value="">-- Select Training --</option>';
         data.forEach(t => {
@@ -55,19 +52,14 @@
           option.text = t.Training_Name;
           select.add(option);
         });
-      } catch(err) {
-        console.error(err);
-        document.getElementById('formMessage').innerText = 'Failed to load trainings';
-      }
+      }).getTrainings();
     }
 
-    async function fetchFeedbackQuestions(trainingName) {
-      try {
-        const res = await fetch(`${WEB_APP_URL}?action=getQuestions&training=${encodeURIComponent(trainingName)}`);
-        const data = await res.json();
+    function loadQuestions(trainingName) {
+      google.script.run.withSuccessHandler(function(data){
         const container = document.getElementById('questionsContainer');
         container.innerHTML = '';
-        data.forEach((q,i) => {
+        data.forEach(q => {
           const div = document.createElement('div');
           div.className = 'question';
           if(q.Question_Type === 'Rating') {
@@ -86,25 +78,24 @@
           }
           container.appendChild(div);
         });
-      } catch(err) {
-        console.error(err);
-        document.getElementById('formMessage').innerText = 'Failed to load questions';
-      }
+      }).getQuestions(trainingName);
     }
 
-    document.getElementById('trainingSelect').addEventListener('change', function() {
-      if(this.value) fetchFeedbackQuestions(this.value);
+    document.getElementById('trainingSelect').addEventListener('change', function(){
+      if(this.value) loadQuestions(this.value);
       else document.getElementById('questionsContainer').innerHTML = '';
     });
 
-    document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+    document.getElementById('registrationForm').addEventListener('submit', function(e){
       e.preventDefault();
       const formMessage = document.getElementById('formMessage');
       formMessage.innerText = 'Submitting...';
+
       const feedback = [];
       document.querySelectorAll('#questionsContainer select, #questionsContainer textarea').forEach(el => {
         feedback.push({id: el.getAttribute('data-id'), answer: el.value});
       });
+
       const payload = {
         name: document.getElementById('name').value,
         email: document.getElementById('email').value,
@@ -113,25 +104,15 @@
         training: document.getElementById('trainingSelect').value,
         feedback: feedback
       };
-      try {
-        const res = await fetch(`${WEB_APP_URL}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const text = await res.text();
-        formMessage.innerText = text;
-        if(text.includes('✔')) {
-          this.reset();
-          document.getElementById('questionsContainer').innerHTML = '';
-        }
-      } catch(err) {
-        console.error(err);
-        formMessage.innerText = 'Submission failed';
-      }
+
+      google.script.run.withSuccessHandler(function(responseId){
+        formMessage.innerText = "✔ Form submitted successfully! Response ID: " + responseId;
+        document.getElementById('registrationForm').reset();
+        document.getElementById('questionsContainer').innerHTML = '';
+      }).saveParticipant(payload);
     });
 
-    fetchTrainings();
+    loadTrainings();
   </script>
 </body>
 </html>
