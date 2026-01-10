@@ -47,9 +47,9 @@
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx1HgF3YhGjEqjlP9iZBNNF6f7ptG_mlgx3bFYV9wjRNTnBFr6K7ekTCiu-e2Y-Tusw9w/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzWO4Q8jlefvU1-pxAac5jfms6-S_-g6SGqiJUKXGMo8TWJuBi6_XZc-7iX2Nh9230pqg/exec";
 
-// Load trainings from Apps Script Web App
+// Load Trainings
 function loadTrainings() {
   fetch(`${WEB_APP_URL}?action=getTrainings`)
     .then(res => res.json())
@@ -66,7 +66,7 @@ function loadTrainings() {
     .catch(err => console.error("Failed to load trainings:", err));
 }
 
-// Load questions dynamically
+// Load Questions on training change
 document.getElementById('trainingSelect').addEventListener('change', function() {
   const training = this.value;
   const container = document.getElementById('questionsContainer');
@@ -96,7 +96,7 @@ document.getElementById('trainingSelect').addEventListener('change', function() 
     .catch(err => console.error("Failed to load questions:", err));
 });
 
-// Handle form submit
+// Handle Form Submit
 document.getElementById('registrationForm').addEventListener('submit', function(e) {
   e.preventDefault();
   const formData = new FormData(this);
