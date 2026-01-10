@@ -1,124 +1,76 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Training Registration & Feedback Form</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #0b2a4a; padding: 30px; }
-    .card { max-width: 700px; margin: auto; background: #ffffff; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-    h2 { text-align: center; color: #0b2a4a; }
-    label { font-weight: bold; margin-top: 15px; display: block; }
-    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
-    button { margin-top: 25px; width: 100%; padding: 12px; background: #f57c00; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    button:hover { background: #e66b00; }
-    .message { margin-top: 15px; text-align: center; color: green; }
-  </style>
-</head>
-<body>
-
-<div class="card">
-  <h2>Training Registration & Feedback Form</h2>
-  <form id="registrationForm">
-    <label>Name</label>
-    <input type="text" name="name" required>
-
-    <label>Email</label>
-    <input type="email" name="email" required>
-    <small style="font-size:13px;">E-Certificate will be sent to this email</small>
-
-    <label>Department</label>
-    <input type="text" name="department" required>
-
-    <label>Designation</label>
-    <input type="text" name="designation">
-
-    <label>Training Name</label>
-    <select name="training" id="trainingSelect" required>
-      <option value="">Loading trainings...</option>
-    </select>
-
-    <div id="feedbackSection" style="margin-top:20px;">
-      <h3>Feedback Questions</h3>
-      <div id="questionsContainer"></div>
-    </div>
-
-    <button type="submit">Submit</button>
-    <div class="message" id="formMessage"></div>
-  </form>
-</div>
-
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby21_-Zt5ep__GYywqOJcgld7Pi2pMifFoLaI7a-Lbj/dev";
+const baseURL = "https://script.google.com/macros/s/YOUR_EXEC_ID/exec";
 
-// Load Trainings
+// Load trainings
 function loadTrainings() {
-  fetch(`${WEB_APP_URL}?action=getTrainings`)
+  fetch(baseURL+"?action=getTrainings")
     .then(res => res.json())
     .then(data => {
-      const select = document.getElementById('trainingSelect');
-      select.innerHTML = '<option value="">-- Select Training --</option>';
+      const ddl = document.getElementById('training');
+      ddl.innerHTML = '<option value="">-- Select Training --</option>';
       data.forEach(t => {
         const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
-        select.appendChild(opt);
+        opt.value = t; opt.textContent = t;
+        ddl.appendChild(opt);
       });
     })
-    .catch(err => console.error("Failed to load trainings:", err));
+    .catch(err => alert("Failed to load trainings: "+err));
 }
 
-// Load Questions on training change
-document.getElementById('trainingSelect').addEventListener('change', function() {
+// Load feedback questions
+document.getElementById('training').addEventListener('change', function(){
   const training = this.value;
-  const container = document.getElementById('questionsContainer');
-  container.innerHTML = '';
-  if (!training) return;
+  const container = document.getElementById('feedbackQuestions');
+  container.innerHTML='';
+  if(!training) return;
 
-  fetch(`${WEB_APP_URL}?action=getQuestions&training=${encodeURIComponent(training)}`)
+  fetch(baseURL+"?action=getQuestions&training="+encodeURIComponent(training))
     .then(res => res.json())
     .then(questions => {
-      questions.forEach(q => {
+      questions.forEach((q,i)=>{
         const div = document.createElement('div');
-        div.innerHTML = `<label>${q.Question_Text}</label>` +
-          (q.Question_Type === "Rating"
-            ? `<select name="fb${q.Question_ID}" required>
-                <option value="">-- Select Rating --</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-               </select>`
-            : `<textarea name="fb${q.Question_ID}" required></textarea>`
-          );
+        if(q.Question_Type=='Rating'){
+          div.innerHTML=`<label>${q.Question_Text}</label>
+            <select id='fb${i}' required>
+              <option value="">-- Select Rating --</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>`;
+        } else {
+          div.innerHTML=`<label>${q.Question_Text}</label>
+            <textarea id='fb${i}' required></textarea>`;
+        }
         container.appendChild(div);
       });
+      document.getElementById('feedbackSection').style.display='block';
     })
-    .catch(err => console.error("Failed to load questions:", err));
+    .catch(err => alert("Failed to load questions: "+err));
 });
 
-// Handle Form Submit
-document.getElementById('registrationForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const formData = new FormData(this);
+// Submit
+document.getElementById('submitBtn').addEventListener('click', function(){
+  const obj = {
+    name: document.getElementById('name').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    department: document.getElementById('department').value.trim(),
+    designation: document.getElementById('designation').value.trim(),
+    training: document.getElementById('training').value,
+    feedback: Array.from(document.querySelectorAll('#feedbackQuestions select,#feedbackQuestions textarea')).map((el,i)=>({id:'Q'+i, answer:el.value}))
+  };
 
-  fetch(WEB_APP_URL, {
-    method: "POST",
-    body: formData
+  fetch(baseURL, {
+    method:'POST',
+    body: JSON.stringify(obj),
+    headers:{'Content-Type':'application/json'}
   })
   .then(res => res.text())
-  .then(msg => {
-    document.getElementById('formMessage').innerText = msg;
-    this.reset();
-    document.getElementById('questionsContainer').innerHTML = '';
-  })
-  .catch(err => {
-    document.getElementById('formMessage').innerText = "Submission failed: " + err;
-  });
+  .then(msg => alert(msg))
+  .catch(err => alert("Submission failed: "+err));
 });
 
-// Initialize
+// Init
 loadTrainings();
 </script>
-
-</body>
-</html>
