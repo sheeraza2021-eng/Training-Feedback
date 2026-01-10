@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Training Feedback Form</title>
-  <meta charset="utf-8" />
 
   <style>
     body {
@@ -15,9 +15,9 @@
       color: #0d47a1;
     }
     label {
-      font-weight: bold;
-      margin-top: 15px;
       display: block;
+      margin-top: 15px;
+      font-weight: bold;
     }
     input, select, textarea {
       width: 100%;
@@ -30,14 +30,14 @@
       min-height: 80px;
     }
     .question {
-      margin-top: 12px;
+      margin-top: 10px;
     }
     button {
       margin-top: 20px;
       width: 100%;
       padding: 10px;
       background: #0d47a1;
-      color: #fff;
+      color: white;
       font-size: 16px;
       border: none;
       border-radius: 5px;
@@ -86,9 +86,9 @@
 
 <script>
   const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycby90PP4MZZ0Aw35vNnYYnkwXXLYZJ2fr5LOilAFS3b2DGiEhG1yQqH_aQ2R4ik_ogiwBg/exec";
+    "https://script.google.com/macros/s/AKfycbyocddROCdK6tOzvwgttiVEZDzdXXxlFB8pp9r7bscFF-BspYT_PPp0TdxySdqd1KUXqQ/exec";
 
-  // ================= LOAD TRAININGS =================
+  // ===== LOAD TRAININGS =====
   async function loadTrainings() {
     try {
       const res = await fetch(WEB_APP_URL + "?action=getTrainings");
@@ -103,13 +103,13 @@
         opt.textContent = t.Training_Name;
         select.appendChild(opt);
       });
-    } catch (e) {
+    } catch (err) {
       document.getElementById("msg").innerText = "❌ Failed to load trainings";
-      console.error(e);
+      console.error(err);
     }
   }
 
-  // ================= LOAD QUESTIONS =================
+  // ===== LOAD QUESTIONS =====
   async function loadQuestions(trainingName) {
     try {
       const res = await fetch(
@@ -142,18 +142,22 @@
             <textarea data-id="${q.Question_ID}" required></textarea>
           `;
         }
+
         container.appendChild(div);
       });
-    } catch (e) {
+    } catch (err) {
       document.getElementById("msg").innerText = "❌ Failed to load questions";
-      console.error(e);
+      console.error(err);
     }
   }
 
-  // ================= EVENTS =================
+  // ===== EVENTS =====
   document.getElementById("training").addEventListener("change", function () {
-    if (this.value) loadQuestions(this.value);
-    else document.getElementById("questions").innerHTML = "";
+    if (this.value) {
+      loadQuestions(this.value);
+    } else {
+      document.getElementById("questions").innerHTML = "";
+    }
   });
 
   document.getElementById("feedbackForm").addEventListener("submit", async function (e) {
@@ -188,15 +192,16 @@
       const result = await res.json();
 
       if (result.status === "success") {
-        msg.innerText = "✔ Submitted successfully! Response ID: " + result.responseId;
+        msg.innerText =
+          "✔ Submitted successfully! Response ID: " + result.responseId;
         this.reset();
         document.getElementById("questions").innerHTML = "";
       } else {
         msg.innerText = "❌ " + result.message;
       }
-    } catch (e) {
+    } catch (err) {
       msg.innerText = "❌ Submission failed";
-      console.error(e);
+      console.error(err);
     }
   });
 
