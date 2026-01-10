@@ -47,11 +47,11 @@
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxJPbnfFXOMSCV4NvlFoe0YxNQxe5X-b6KBSpICGsi8bmEcSkt_Pm3yW70zGOpmCqWTXQ/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx1HgF3YhGjEqjlP9iZBNNF6f7ptG_mlgx3bFYV9wjRNTnBFr6K7ekTCiu-e2Y-Tusw9w/exec";
 
-// Fetch trainings dynamically from Web App
+// Load trainings from Apps Script Web App
 function loadTrainings() {
-  fetch(WEB_APP_URL + "?action=getTrainings")
+  fetch(`${WEB_APP_URL}?action=getTrainings`)
     .then(res => res.json())
     .then(data => {
       const select = document.getElementById('trainingSelect');
@@ -66,14 +66,14 @@ function loadTrainings() {
     .catch(err => console.error("Failed to load trainings:", err));
 }
 
-// Fetch feedback questions for selected training
+// Load questions dynamically
 document.getElementById('trainingSelect').addEventListener('change', function() {
   const training = this.value;
   const container = document.getElementById('questionsContainer');
   container.innerHTML = '';
-  if(!training) return;
+  if (!training) return;
 
-  fetch(WEB_APP_URL + "?action=getQuestions&training=" + encodeURIComponent(training))
+  fetch(`${WEB_APP_URL}?action=getQuestions&training=${encodeURIComponent(training)}`)
     .then(res => res.json())
     .then(questions => {
       questions.forEach(q => {
@@ -96,21 +96,24 @@ document.getElementById('trainingSelect').addEventListener('change', function() 
     .catch(err => console.error("Failed to load questions:", err));
 });
 
-// Handle form submission
+// Handle form submit
 document.getElementById('registrationForm').addEventListener('submit', function(e) {
   e.preventDefault();
   const formData = new FormData(this);
 
-  fetch(WEB_APP_URL, { method: "POST", body: formData })
-    .then(res => res.text())
-    .then(msg => {
-      document.getElementById('formMessage').innerText = msg;
-      this.reset();
-      document.getElementById('questionsContainer').innerHTML = '';
-    })
-    .catch(err => {
-      document.getElementById('formMessage').innerText = "Submission failed: " + err;
-    });
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.text())
+  .then(msg => {
+    document.getElementById('formMessage').innerText = msg;
+    this.reset();
+    document.getElementById('questionsContainer').innerHTML = '';
+  })
+  .catch(err => {
+    document.getElementById('formMessage').innerText = "Submission failed: " + err;
+  });
 });
 
 // Initialize
