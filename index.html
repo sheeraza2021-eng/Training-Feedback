@@ -1,118 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Training Registration & Feedback Form</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f9fc; }
-    h2 { color: #0d47a1; text-align: center; }
-    label { display: block; margin-top: 15px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
-    .question { margin-top: 10px; }
-    .submit-btn { margin-top: 20px; background-color: #0d47a1; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
-    .submit-btn:hover { background-color: #1565c0; }
-    .message { margin-top: 20px; font-weight: bold; text-align: center; }
-  </style>
+<meta charset="UTF-8">
+<title>Training Feedback Form</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f6f8;
+}
+.container{
+    max-width:600px;
+    margin:40px auto;
+    background:#fff;
+    padding:25px;
+    border-radius:8px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+h2{
+    text-align:center;
+}
+label{
+    font-weight:bold;
+    margin-top:10px;
+    display:block;
+}
+input, select, button{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+}
+.question{
+    margin-top:15px;
+}
+button{
+    background:#0b5ed7;
+    color:white;
+    border:none;
+    cursor:pointer;
+    margin-top:20px;
+}
+button:hover{
+    background:#084298;
+}
+.success{
+    color:green;
+    text-align:center;
+}
+.error{
+    color:red;
+    text-align:center;
+}
+</style>
 </head>
+
 <body>
-  <h2>Training Registration & Feedback Form</h2>
-  <form id="registrationForm">
-    <label>Name:</label>
-    <input type="text" id="name" required />
+<div class="container">
+<h2>Training Feedback Form</h2>
 
-    <label>Email:</label>
-    <input type="email" id="email" required />
-    <small>E-Certificate will be sent to this email</small>
+<form id="feedbackForm">
 
-    <label>Department:</label>
-    <input type="text" id="department" required />
+<label>Name</label>
+<input type="text" name="name" required>
 
-    <label>Designation:</label>
-    <input type="text" id="designation" />
+<label>Department</label>
+<input type="text" name="department" required>
 
-    <label>Training Name:</label>
-    <select id="trainingSelect" required>
-      <option value="">Loading trainings...</option>
-    </select>
+<label>Designation</label>
+<input type="text" name="designation" required>
 
-    <div id="questionsContainer"></div>
+<label>Email</label>
+<input type="email" name="email" required>
 
-    <button type="submit" class="submit-btn">Submit</button>
-    <div class="message" id="formMessage"></div>
-  </form>
+<label>Training</label>
+<select name="training" id="trainingSelect" required>
+<option value="">Loading trainings...</option>
+</select>
 
-  <script>
-    // ===== Use google.script.run for Apps Script internal calls =====
-    function loadTrainings() {
-      google.script.run.withSuccessHandler(function(data){
-        const select = document.getElementById('trainingSelect');
-        select.innerHTML = '<option value="">-- Select Training --</option>';
-        data.forEach(t => {
-          const option = document.createElement('option');
-          option.value = t.Training_Name;
-          option.text = t.Training_Name;
-          select.add(option);
-        });
-      }).getTrainings();
-    }
+<div id="questions"></div>
 
-    function loadQuestions(trainingName) {
-      google.script.run.withSuccessHandler(function(data){
-        const container = document.getElementById('questionsContainer');
-        container.innerHTML = '';
-        data.forEach(q => {
-          const div = document.createElement('div');
-          div.className = 'question';
-          if(q.Question_Type === 'Rating') {
-            div.innerHTML = `<label>${q.Question_Text}</label>
-                             <select data-id="${q.Question_ID}" required>
-                               <option value="">-- Select Rating --</option>
-                               <option value="1">1</option>
-                               <option value="2">2</option>
-                               <option value="3">3</option>
-                               <option value="4">4</option>
-                               <option value="5">5</option>
-                             </select>`;
-          } else {
-            div.innerHTML = `<label>${q.Question_Text}</label>
-                             <textarea data-id="${q.Question_ID}" required></textarea>`;
-          }
-          container.appendChild(div);
-        });
-      }).getQuestions(trainingName);
-    }
+<button type="submit">Submit Feedback</button>
+</form>
 
-    document.getElementById('trainingSelect').addEventListener('change', function(){
-      if(this.value) loadQuestions(this.value);
-      else document.getElementById('questionsContainer').innerHTML = '';
+<p id="msg"></p>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlaszm-Yjx5U7T-zGJUkoY06rXi8hIK-cGRqmUotFJjpTa5PAAXKCxFEk1im1IFKe8Ig/exec";
+
+/* Load Trainings */
+fetch(SCRIPT_URL + "?action=getTrainings")
+.then(res => res.json())
+.then(data => {
+    const sel = document.getElementById("trainingSelect");
+    sel.innerHTML = '<option value="">Select Training</option>';
+    data.forEach(t => {
+        sel.innerHTML += `<option value="${t}">${t}</option>`;
     });
+})
+.catch(() => {
+    document.getElementById("trainingSelect").innerHTML =
+        '<option value="">Failed to load trainings</option>';
+});
 
-    document.getElementById('registrationForm').addEventListener('submit', function(e){
-      e.preventDefault();
-      const formMessage = document.getElementById('formMessage');
-      formMessage.innerText = 'Submitting...';
+/* Load Questions on training change */
+document.getElementById("trainingSelect").addEventListener("change", function(){
+    const training = this.value;
+    if(!training) return;
 
-      const feedback = [];
-      document.querySelectorAll('#questionsContainer select, #questionsContainer textarea').forEach(el => {
-        feedback.push({id: el.getAttribute('data-id'), answer: el.value});
-      });
-
-      const payload = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        department: document.getElementById('department').value,
-        designation: document.getElementById('designation').value,
-        training: document.getElementById('trainingSelect').value,
-        feedback: feedback
-      };
-
-      google.script.run.withSuccessHandler(function(responseId){
-        formMessage.innerText = "✔ Form submitted successfully! Response ID: " + responseId;
-        document.getElementById('registrationForm').reset();
-        document.getElementById('questionsContainer').innerHTML = '';
-      }).saveParticipant(payload);
+    fetch(SCRIPT_URL + "?action=getQuestions&training=" + encodeURIComponent(training))
+    .then(res => res.json())
+    .then(qs => {
+        const div = document.getElementById("questions");
+        div.innerHTML = "";
+        qs.forEach(q => {
+            div.innerHTML += `
+            <div class="question">
+                <label>${q.text}</label>
+                <input type="text" name="q_${q.id}" required>
+            </div>`;
+        });
     });
+});
 
-    loadTrainings();
-  </script>
+/* Submit Form */
+document.getElementById("feedbackForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch(SCRIPT_URL, {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.text())
+    .then(() => {
+        document.getElementById("msg").innerHTML =
+            "<p class='success'>Feedback submitted successfully</p>";
+        this.reset();
+        document.getElementById("questions").innerHTML="";
+    })
+    .catch(err => {
+        document.getElementById("msg").innerHTML =
+            "<p class='error'>Submission failed</p>";
+        console.error(err);
+    });
+});
+</script>
+
 </body>
 </html>
