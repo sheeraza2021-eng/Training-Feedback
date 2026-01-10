@@ -4,129 +4,103 @@
   <meta charset="UTF-8">
   <title>Training Registration & Feedback Form</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #0b2a4a; padding:30px; }
+    body { font-family: Arial, sans-serif; background:#0b2a4a; padding:30px; }
     .card { max-width:700px; margin:auto; background:#fff; border-radius:12px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-    h2 { text-align:center; color:#0b2a4a; }
+    h2 { color:#0b2a4a; text-align:center; }
     label { display:block; margin-top:15px; font-weight:bold; }
     input, select, textarea { width:100%; padding:10px; margin-top:5px; border-radius:6px; border:1px solid #ccc; }
     button { margin-top:25px; width:100%; padding:12px; background:#f57c00; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
     button:hover { background:#e66b00; }
-    .msg { margin-top:15px; text-align:center; font-weight:bold; color:green; }
+    .msg { margin-top:15px; text-align:center; color:green; font-weight:bold; }
+    .error { color:red; }
   </style>
 </head>
 <body>
-<div class="card">
-  <h2>Training Registration & Feedback Form</h2>
+  <div class="card">
+    <h2>Training Registration & Feedback Form</h2>
 
-  <label>Name</label>
-  <input type="text" id="name" required>
+    <form id="registrationForm">
+      <label>Name</label>
+      <input type="text" name="name" required>
 
-  <label>Email</label>
-  <input type="email" id="email" required>
-  <small style="font-size:13px;">E-Certificate will be sent to this email</small>
+      <label>Email</label>
+      <input type="email" name="email" required>
+      <small style="color:#555; font-size:13px;">E-Certificate will be sent to this email</small>
 
-  <label>Department</label>
-  <input type="text" id="department" required>
+      <label>Department</label>
+      <input type="text" name="department" required>
 
-  <label>Designation</label>
-  <input type="text" id="designation">
+      <label>Designation</label>
+      <input type="text" name="designation">
 
-  <label>Training Name</label>
-  <select id="training"><option>Loading trainings...</option></select>
+      <label>Training Name</label>
+      <select name="training" id="training" required>
+        <option value="">Loading trainings...</option>
+      </select>
 
-  <div id="feedbackSection" style="margin-top:20px; display:none;">
-    <h3>Feedback Questions</h3>
-    <div id="feedbackQuestions"></div>
+      <div id="feedbackQuestions" style="margin-top:20px;"></div>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <div class="msg" id="msg"></div>
   </div>
 
-  <button id="submitBtn">Submit</button>
-  <div class="msg" id="msg"></div>
-</div>
-
 <script>
-const msgEl = document.getElementById('msg');
-// Replace with your Apps Script /exec URL
-const baseURL = "https://script.google.com/macros/s/AKfycbxJWbtD-momAoaNLL4c7trWBo5hEMGguh9H5hN4KYiueZWs5ZhkLJSHcIIi6s5t33iDTA/exec";
+  const baseURL = "https://script.google.com/macros/s/AKfycbyKyJkOwhpQODNQ6SxKeL0gRakAf3327G_B1ZuwxdMLgUFKEPVy-jjIcDVQ1qp8SEurqw/exec";
+  const msgDiv = document.getElementById('msg');
 
-function showMsg(text,isError=false){ 
-  msgEl.innerText=text; 
-  msgEl.style.color=isError?'red':'green'; 
-}
-
-// Load trainings
-function loadTrainings(){
-  fetch(baseURL+"?action=getTrainings")
-    .then(res=>res.json())
-    .then(data=>{
-      const ddl=document.getElementById('training');
-      ddl.innerHTML='<option value="">-- Select Training --</option>';
-      data.forEach(t=>{
-        const opt=document.createElement('option'); opt.value=t; opt.textContent=t; ddl.appendChild(opt);
-      });
+  // Load Trainings
+  fetch(baseURL + "?action=getTrainings")
+    .then(res => res.json())
+    .then(data => {
+      const ddl = document.getElementById('training');
+      ddl.innerHTML = '<option value="">-- Select Training --</option>';
+      data.forEach(t => ddl.add(new Option(t,t)));
     })
-    .catch(err=>showMsg('Failed to load trainings: '+err,true));
-}
+    .catch(err => { msgDiv.className='msg error'; msgDiv.innerText='Failed to load trainings'; console.error(err); });
 
-// Load feedback questions
-document.getElementById('training').addEventListener('change',function(){
-  const training=this.value;
-  const container=document.getElementById('feedbackQuestions');
-  container.innerHTML='';
-  if(!training){ document.getElementById('feedbackSection').style.display='none'; return; }
+  // Load Feedback Questions on Training Change
+  document.getElementById('training').addEventListener('change', function(){
+    const training = this.value;
+    const container = document.getElementById('feedbackQuestions');
+    container.innerHTML = '';
+    if(!training) return;
 
-  fetch(baseURL+"?action=getQuestions&training="+encodeURIComponent(training))
-    .then(res=>res.json())
-    .then(questions=>{
-      if(!questions || questions.length===0){ container.innerHTML='No questions'; return; }
-      questions.forEach((q,i)=>{
-        const div=document.createElement('div');
-        if(q.Question_Type==='Rating'){
-          div.innerHTML=`<label>${q.Question_Text}</label>
-            <select id='fb${i}' required>
-              <option value="">-- Select Rating --</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>`;
-        } else {
-          div.innerHTML=`<label>${q.Question_Text}</label>
-            <textarea id='fb${i}' required></textarea>`;
-        }
-        container.appendChild(div);
-      });
-      document.getElementById('feedbackSection').style.display='block';
-    })
-    .catch(err=>showMsg('Failed to load questions: '+err,true));
-});
+    fetch(baseURL + "?action=getQuestions&training=" + encodeURIComponent(training))
+      .then(res => res.json())
+      .then(questions => {
+        questions.forEach((q,i) => {
+          const div = document.createElement('div');
+          div.innerHTML = `<label>${q.Question_Text}</label>
+                           <select name="fb${i}" required>
+                             <option value="">Select rating</option>
+                             <option value="1">1</option>
+                             <option value="2">2</option>
+                             <option value="3">3</option>
+                             <option value="4">4</option>
+                             <option value="5">5</option>
+                           </select>`;
+          container.appendChild(div);
+        });
+      })
+      .catch(err => { msgDiv.className='msg error'; msgDiv.innerText='Failed to load questions'; console.error(err); });
+  });
 
-// Submit participant + feedback
-document.getElementById('submitBtn').addEventListener('click',function(){
-  const obj={
-    name: document.getElementById('name').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    department: document.getElementById('department').value.trim(),
-    designation: document.getElementById('designation').value.trim(),
-    training: document.getElementById('training').value,
-    feedback: Array.from(document.querySelectorAll('#feedbackQuestions select,#feedbackQuestions textarea')).map((el,i)=>({id:'Q'+i,answer:el.value}))
-  };
+  // Submit Form using FormData (CORS-safe)
+  document.getElementById('registrationForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    msgDiv.className='msg'; msgDiv.innerText='Submitting...';
 
-  if(!obj.name || !obj.email || !obj.department || !obj.training){ showMsg('Please fill all required fields',true); return; }
-
-  showMsg('Submitting...');
-  fetch(baseURL,{
-    method:'POST',
-    body: JSON.stringify(obj),
-    headers:{'Content-Type':'application/json'}
-  })
-  .then(res=>res.text())
-  .then(msg=>showMsg(msg))
-  .catch(err=>showMsg('Submission failed: '+err,true));
-});
-
-// Initialize
-loadTrainings();
+    fetch(baseURL, { method:'POST', body:new FormData(this) })
+      .then(res => res.text())
+      .then(msg => {
+        msgDiv.innerText = msg;
+        if(msg.includes('✔')) this.reset();
+        document.getElementById('feedbackQuestions').innerHTML='';
+      })
+      .catch(err => { msgDiv.className='msg error'; msgDiv.innerText='Submission failed'; console.error(err); });
+  });
 </script>
 </body>
 </html>
