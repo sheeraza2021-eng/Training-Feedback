@@ -1,114 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Training Registration Form</title>
-<style>
-body{font-family:Arial,sans-serif;background:#f0f4f8;padding:20px;}
-.card{max-width:700px;margin:auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.15);}
-h2{text-align:center;color:#0d47a1;}
-label{font-weight:bold;margin-top:15px;display:block;}
-input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:6px;border:1px solid #ccc;}
-button{margin-top:20px;width:100%;padding:12px;background:#0d47a1;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;}
-button:hover{background:#1565c0;}
-.message{margin-top:15px;font-weight:bold;text-align:center;}
-.stars{display:flex;gap:5px;cursor:pointer;margin-top:5px;}
-.star{font-size:22px;color:#ccc;}
-.star.selected{color:#ffb400;}
-</style>
+  <meta charset="UTF-8">
+  <title>Training Feedback Form</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0f172a; color:#fff; margin:0; padding:0; }
+    .container { max-width: 700px; margin: 40px auto; background:#111827; padding: 25px; border-radius: 12px; box-shadow: 0 0 25px rgba(0,0,0,.4); }
+    h2 { text-align:center; color:#f97316; }
+    p { text-align:center; }
+    button { background:#f97316; color:#000; padding:12px 20px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
+    iframe { width:100%; height:800px; border:none; border-radius:8px; margin-top:20px; }
+  </style>
 </head>
 <body>
-<div class="card">
-<h2>Training Registration & Feedback</h2>
-<label>Name</label><input type="text" id="name" required>
-<label>Email</label><input type="email" id="email" required><small>E-Certificate will be sent to this email</small>
-<label>Department</label><input type="text" id="department" required>
-<label>Designation</label><input type="text" id="designation">
-<label>Training Name</label>
-<select id="training"><option>Loading trainings...</option></select>
-<div id="feedbackSection" style="margin-top:20px;display:none;">
-<h3>Feedback Questions</h3>
-<div id="feedbackQuestions"></div>
-</div>
-<button id="submitBtn">Submit</button>
-<div class="message" id="msg"></div>
-</div>
+  <div class="container">
+    <h2>Training Feedback Form</h2>
+    <p>Click the button below to open the feedback form:</p>
+    <div style="text-align:center;">
+      <button onclick="openForm()">Open Form</button>
+    </div>
 
-<script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwhnfu35eOCdbeFn1ipwDpYTJoi-i_kq5LVZN2H6DyCFNAkEfIsWadZrH3rPPapjqA2lA/exec"; // replace with your Web App URL
+    <p>Or embedded directly:</p>
+    <iframe src="https://script.google.com/macros/s/AKfycbwZ2gNkfkygPDY3IRPjOV3RsYnE7Xzg5zXnqACSLgFI3zHnnMkWdpn2X5u3XKhoGBwV/exec"></iframe>
+  </div>
 
-function showMessage(msg,color="green"){ const el=document.getElementById('msg'); el.innerText=msg; el.style.color=color; }
-async function loadTrainings(){
-  const select=document.getElementById('training'); select.innerHTML='';
-  try{
-    const res = await fetch(WEB_APP_URL+"?action=getTrainings");
-    const data = await res.json();
-    data.forEach(t=>{
-      const opt=document.createElement('option'); opt.value=t; opt.textContent=t; select.appendChild(opt);
-    });
-  }catch(err){ showMessage("Failed to load trainings","red"); }
-}
-async function loadQuestions(training){
-  const container=document.getElementById('feedbackQuestions'); container.innerHTML=''; 
-  if(!training) return document.getElementById('feedbackSection').style.display='none';
-  try{
-    const res = await fetch(WEB_APP_URL+"?action=getQuestions&training="+encodeURIComponent(training));
-    const data = await res.json();
-    data.forEach((q,i)=>{
-      const div=document.createElement('div'); div.className='question';
-      if(q.Question_Type==="Rating"){
-        div.innerHTML=`<label>${q.Question_Text}</label><div class="stars" id="star${i}">
-          ${[1,2,3,4,5].map(n=>`<span class="star" data-value="${n}">&#9733;</span>`).join('')}
-        </div>`;
-      } else {
-        div.innerHTML=`<label>${q.Question_Text}</label><textarea id="fb${i}"></textarea>`;
-      }
-      container.appendChild(div);
-      if(q.Question_Type==="Rating"){
-        const stars=div.querySelectorAll('.star');
-        stars.forEach(s=>{
-          s.addEventListener('click',()=>{
-            stars.forEach(x=>x.classList.remove('selected'));
-            for(let j=0;j<s.dataset.value;j++) stars[j].classList.add('selected');
-          });
-        });
-      }
-    });
-    document.getElementById('feedbackSection').style.display='block';
-  }catch(err){ showMessage("Failed to load questions","red"); }
-}
-
-document.getElementById('training').addEventListener('change',e=>loadQuestions(e.target.value));
-
-document.getElementById('submitBtn').addEventListener('click',async()=>{
-  const obj={
-    name: document.getElementById('name').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    department: document.getElementById('department').value.trim(),
-    designation: document.getElementById('designation').value.trim(),
-    training: document.getElementById('training').value,
-    feedback:[]
-  };
-  if(!obj.name||!obj.email||!obj.department||!obj.training){ showMessage("Please fill all required fields","red"); return; }
-  document.querySelectorAll('#feedbackQuestions .question').forEach((q,i)=>{
-    const stars=q.querySelectorAll('.star.selected');
-    if(stars.length>0) obj.feedback.push({id:'Q'+i, answer:stars.length});
-    else{
-      const txt=q.querySelector('textarea');
-      if(txt) obj.feedback.push({id:'Q'+i, answer:txt.value});
+  <script>
+    function openForm() {
+      window.open("https://script.google.com/macros/s/AKfycbwZ2gNkfkygPDY3IRPjOV3RsYnE7Xzg5zXnqACSLgFI3zHnnMkWdpn2X5u3XKhoGBwV/exec", "_blank");
     }
-  });
-  showMessage("Submitting...");
-  try{
-    const res = await fetch(WEB_APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
-    const msg = await res.text(); showMessage(msg);
-    if(msg.includes('✔')){ document.getElementById('feedbackQuestions').innerHTML=''; document.getElementById('training').value=''; }
-  }catch(err){ showMessage("Submission failed","red"); }
-});
-
-// initialize
-loadTrainings();
-</script>
+  </script>
 </body>
 </html>
-
