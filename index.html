@@ -41,10 +41,8 @@
   </form>
 
   <script>
-    // Updated Web App URL
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzV6P1qtAbN8PASlvO8GtTXSmEHGEgQ6Nt7XWc3t90zvysyy2WzZIFToanLhQrd5bHgTw/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKlDTQ6gu0XlzOSRyK4Nm2eJGiwjPROdoRBZcVpKhZBA578A-AXeGnlEn6W2b-OEtiGw/exec";
 
-    // Fetch Active Trainings
     async function fetchTrainings() {
       try {
         const res = await fetch(`${WEB_APP_URL}?action=getTrainings`);
@@ -63,17 +61,16 @@
       }
     }
 
-    // Fetch Feedback Questions for Selected Training
     async function fetchFeedbackQuestions(trainingName) {
       try {
         const res = await fetch(`${WEB_APP_URL}?action=getQuestions&training=${encodeURIComponent(trainingName)}`);
         const data = await res.json();
         const container = document.getElementById('questionsContainer');
         container.innerHTML = '';
-        data.forEach(q => {
+        data.forEach((q,i) => {
           const div = document.createElement('div');
           div.className = 'question';
-          if(q.Question_Type.toLowerCase() === 'rating') {
+          if(q.Question_Type === 'Rating') {
             div.innerHTML = `<label>${q.Question_Text}</label>
                              <select data-id="${q.Question_ID}" required>
                                <option value="">-- Select Rating --</option>
@@ -95,23 +92,19 @@
       }
     }
 
-    // On Training Selection Change
     document.getElementById('trainingSelect').addEventListener('change', function() {
       if(this.value) fetchFeedbackQuestions(this.value);
       else document.getElementById('questionsContainer').innerHTML = '';
     });
 
-    // On Form Submit
     document.getElementById('registrationForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const formMessage = document.getElementById('formMessage');
       formMessage.innerText = 'Submitting...';
-
       const feedback = [];
       document.querySelectorAll('#questionsContainer select, #questionsContainer textarea').forEach(el => {
         feedback.push({id: el.getAttribute('data-id'), answer: el.value});
       });
-
       const payload = {
         name: document.getElementById('name').value,
         email: document.getElementById('email').value,
@@ -120,7 +113,6 @@
         training: document.getElementById('trainingSelect').value,
         feedback: feedback
       };
-
       try {
         const res = await fetch(`${WEB_APP_URL}`, {
           method: 'POST',
@@ -139,7 +131,6 @@
       }
     });
 
-    // Initial Fetch of Trainings
     fetchTrainings();
   </script>
 </body>
