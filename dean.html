@@ -1,6 +1,3 @@
-// ✅ Dean Assignment Flow (B2) endpoint
-const ASSIGN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/cc2e3d99aa7944dd94cb2b36118fdc93/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xNrSwmzlyqcZqbtwtbqLZFSm-k_QvgX1diehjNpYtIc";
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,23 +31,27 @@ const ASSIGN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.enviro
   </table>
 
   <script>
-    // ✅ Your Dean Flow B1 endpoint
-    const DASH_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/60588aacf9124e80a0afc4f2b5f84858/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=cOZ9O2_YLVy9WGOSdJxWZ2-nFQIEvZaOqWccw3gaDYM";
+    // ✅ Flow endpoints
+    const DASH_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/60588aacf9124e80a0afc4f2b5f84858/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=cOZ9O2_YLVy9WGOSdJxWZ2-nFQIEvZaOqWccw3gaDYM"; // Flow B1
+    const ASSIGN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/cc2e3d99aa7944dd94cb2b36118fdc93/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xNrSwmzlyqcZqbtwtbqLZFSm-k_QvgX1diehjNpYtIc"; // Flow B2
 
-    // Example Dean user object (normally from login)
-    const deanUser = {
-      UserID: "D001",
-      Role: "Dean",
-      Department: "IT",
-      Year: "2025"
-    };
+    // ✅ Get Dean user from login session
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    if (!user || user.Role !== 'Dean') {
+      location.href = 'login.html';
+    }
 
     async function loadDashboard() {
       try {
         const res = await fetch(DASH_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(deanUser)
+          body: JSON.stringify({
+            UserID: user.UserID,
+            Role: user.Role,
+            Department: user.Department,
+            Year: new Date().getFullYear().toString()
+          })
         });
         const data = await res.json();
 
@@ -84,8 +85,29 @@ const ASSIGN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.enviro
       const facultyID = document.getElementById(`faculty_${obsID}`).value;
       if (!facultyID) { alert("Please select a faculty."); return; }
 
-      // 🔜 Next step: call Dean Assignment Flow (B2) endpoint here
-      alert(`Assigning ObsID ${obsID} to Faculty ${facultyID}...`);
+      const payload = {
+        ObsID: obsID,
+        AssignedFacultyID: facultyID,
+        DeanID: user.UserID
+      };
+
+      try {
+        const res = await fetch(ASSIGN_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.status === "ok") {
+          alert("Assigned successfully!");
+          loadDashboard(); // reload table with updated assignment
+        } else {
+          alert("Error: " + (data.message || "Assignment failed"));
+        }
+      } catch (err) {
+        alert("Network error: " + err);
+      }
     }
 
     loadDashboard();
