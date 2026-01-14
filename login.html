@@ -2,83 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Institution Portal — Sign in</title>
+  <title>Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh; }
-    .card { background:#fff; padding:30px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); width:320px; }
-    h2 { margin:0 0 20px; font-weight:600; text-align:center; }
-    .field { margin-bottom:15px; }
-    label { display:block; font-size:14px; margin-bottom:6px; color:#555; }
-    input { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px; }
-    button { width:100%; padding:12px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
-    button:disabled { opacity:0.6; cursor:not-allowed; }
-    .msg { margin-top:12px; font-size:13px; text-align:center; }
-    .msg.error { color:#b91c1c; }
-    .msg.success { color:#16a34a; }
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
+    h1 { margin-bottom:20px; }
+    form { max-width:400px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    label { display:block; margin-bottom:8px; font-weight:bold; }
+    input { width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:6px; }
+    button { width:100%; padding:10px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1e4fc3; }
+    .error { color:red; margin-top:10px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Sign in</h2>
-    <div class="field">
-      <label>Username</label>
-      <input id="username" placeholder="Enter username" />
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input id="password" type="password" placeholder="Enter password" />
-    </div>
-    <button id="submit" onclick="login()">Sign in</button>
-    <div id="msg" class="msg"></div>
-  </div>
+  <h1>Institution Login</h1>
+  <form id="loginForm">
+    <label for="username">Username</label>
+    <input type="text" id="username" required />
+    <label for="password">Password</label>
+    <input type="password" id="password" required />
+    <button type="submit">Login</button>
+    <div id="error" class="error"></div>
+  </form>
 
   <script>
-    // ✅ Your actual Flow A endpoint
-    const LOGIN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1fbeb1a1d3244eaa9b4a247736e8b806/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VazV3iIipGoIodtw5PcwSmazNrDn1q0jF7dJMRibKBM";
+    // ✅ Flow A (Login) endpoint
+    const LOGIN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/<<YOUR-FLOW-A-ID>>/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=<<YOUR-SIG>>";
 
-    async function login() {
-      const btn = document.getElementById('submit');
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const msg = document.getElementById('msg');
-
-      if (!username || !password) {
-        msg.textContent = "Username and password required.";
-        msg.className = "msg error";
-        return;
-      }
-
-      btn.disabled = true; btn.textContent = "Signing in…"; msg.textContent = "";
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
 
       try {
         const res = await fetch(LOGIN_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ Username: username, Password: password })
         });
         const data = await res.json();
 
         if (data.status === "ok") {
-          msg.textContent = "Login successful!";
-          msg.className = "msg success";
+          // Save user info in session
           sessionStorage.setItem("user", JSON.stringify(data.user));
 
-          // Role-based redirect
-          if (data.user.Role === "Dean") location.href = "dean.html";
-          else if (data.user.Role === "Faculty") location.href = "faculty.html";
-          else msg.textContent = "Unknown role. Contact admin.";
+          // Redirect based on role
+          if (data.user.Role === "Dean") {
+            location.href = "dean.html";
+          } else if (data.user.Role === "Faculty") {
+            location.href = "faculty.html"; // optional future page
+          } else {
+            document.getElementById("error").textContent = "Unauthorized role.";
+          }
         } else {
-          msg.textContent = data.message || "Invalid login.";
-          msg.className = "msg error";
+          document.getElementById("error").textContent = "Invalid login.";
         }
       } catch (err) {
-        msg.textContent = "Network error. Try again.";
-        msg.className = "msg error";
+        document.getElementById("error").textContent = "Network error: " + err;
       }
-
-      btn.disabled = false; btn.textContent = "Sign in";
-    }
+    });
   </script>
 </body>
 </html>
