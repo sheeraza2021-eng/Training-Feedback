@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Dean Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
+    h1 { margin-bottom:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { border:1px solid #ccc; padding:10px; text-align:left; }
+    th { background:#2563eb; color:#fff; }
+    select, button { padding:6px 10px; border-radius:6px; border:1px solid #ccc; }
+    button { background:#2563eb; color:#fff; border:none; cursor:pointer; }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>Dean Dashboard</h1>
+  <table id="obsTable">
+    <thead>
+      <tr>
+        <th>ObsID</th>
+        <th>Year</th>
+        <th>Description</th>
+        <th>Assigned Faculty</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // ✅ Your Dean Flow B1 endpoint
+    const DASH_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/60588aacf9124e80a0afc4f2b5f84858/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=cOZ9O2_YLVy9WGOSdJxWZ2-nFQIEvZaOqWccw3gaDYM";
+
+    // Example Dean user object (normally from login)
+    const deanUser = {
+      UserID: "D001",
+      Role: "Dean",
+      Department: "IT",
+      Year: "2025"
+    };
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch(DASH_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(deanUser)
+        });
+        const data = await res.json();
+
+        const tbody = document.querySelector("#obsTable tbody");
+        tbody.innerHTML = "";
+
+        data.observations.forEach(obs => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${obs.ObsID}</td>
+            <td>${obs.Year}</td>
+            <td>${obs.Description}</td>
+            <td>
+              <select id="faculty_${obs.ObsID}">
+                <option value="">-- Select Faculty --</option>
+                ${data.facultyOptions.map(f => `
+                  <option value="${f.UserID}" ${obs.AssignedFacultyID===f.UserID ? "selected":""}>${f.Name}</option>
+                `).join("")}
+              </select>
+            </td>
+            <td><button onclick="assignFaculty('${obs.ObsID}')">Assign</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        alert("Error loading dashboard: " + err);
+      }
+    }
+
+    async function assignFaculty(obsID) {
+      const facultyID = document.getElementById(`faculty_${obsID}`).value;
+      if (!facultyID) { alert("Please select a faculty."); return; }
+
+      // 🔜 Next step: call Dean Assignment Flow (B2) endpoint here
+      alert(`Assigning ObsID ${obsID} to Faculty ${facultyID}...`);
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
