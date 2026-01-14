@@ -1,212 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Training Feedback Form</title>
-
+  <meta charset="utf-8" />
+  <title>Institution Portal — Sign in</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6fb;
-      padding: 20px;
-    }
-    h2 {
-      text-align: center;
-      color: #0d47a1;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    textarea {
-      min-height: 80px;
-    }
-    .question {
-      margin-top: 10px;
-    }
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 10px;
-      background: #0d47a1;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1565c0;
-    }
-    .message {
-      margin-top: 20px;
-      text-align: center;
-      font-weight: bold;
-    }
+    body { font-family: Arial, sans-serif; background:#f4f6f8; display:flex; justify-content:center; align-items:center; height:100vh; }
+    .card { background:#fff; padding:30px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); width:320px; }
+    h2 { margin:0 0 20px; font-weight:600; text-align:center; }
+    .field { margin-bottom:15px; }
+    label { display:block; font-size:14px; margin-bottom:6px; color:#555; }
+    input { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px; }
+    button { width:100%; padding:12px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
+    .msg { margin-top:12px; font-size:13px; text-align:center; }
+    .msg.error { color:#b91c1c; }
+    .msg.success { color:#16a34a; }
   </style>
 </head>
-
 <body>
+  <div class="card">
+    <h2>Sign in</h2>
+    <div class="field">
+      <label>Username</label>
+      <input id="username" placeholder="Enter username" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="password" type="password" placeholder="Enter password" />
+    </div>
+    <button id="submit" onclick="login()">Sign in</button>
+    <div id="msg" class="msg"></div>
+  </div>
 
-<h2>Training Registration & Feedback Form</h2>
+  <script>
+    // ✅ Your actual Flow A endpoint
+    const LOGIN_ENDPOINT = "https://default12b221b30464422389e5888835778b.58.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1fbeb1a1d3244eaa9b4a247736e8b806/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VazV3iIipGoIodtw5PcwSmazNrDn1q0jF7dJMRibKBM";
 
-<form id="feedbackForm">
+    async function login() {
+      const btn = document.getElementById('submit');
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const msg = document.getElementById('msg');
 
-  <label>Name</label>
-  <input type="text" id="name" required>
-
-  <label>Email</label>
-  <input type="email" id="email" required>
-
-  <label>Department</label>
-  <input type="text" id="department" required>
-
-  <label>Designation</label>
-  <input type="text" id="designation">
-
-  <label>Training Name</label>
-  <select id="training" required>
-    <option value="">Loading trainings...</option>
-  </select>
-
-  <div id="questions"></div>
-
-  <button type="submit">Submit Feedback</button>
-
-  <div class="message" id="msg"></div>
-</form>
-
-<script>
-  const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyocddROCdK6tOzvwgttiVEZDzdXXxlFB8pp9r7bscFF-BspYT_PPp0TdxySdqd1KUXqQ/exec";
-
-  // ===== LOAD TRAININGS =====
-  async function loadTrainings() {
-    try {
-      const res = await fetch(WEB_APP_URL + "?action=getTrainings");
-      const data = await res.json();
-
-      const select = document.getElementById("training");
-      select.innerHTML = '<option value="">-- Select Training --</option>';
-
-      data.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.Training_Name;
-        opt.textContent = t.Training_Name;
-        select.appendChild(opt);
-      });
-    } catch (err) {
-      document.getElementById("msg").innerText = "❌ Failed to load trainings";
-      console.error(err);
-    }
-  }
-
-  // ===== LOAD QUESTIONS =====
-  async function loadQuestions(trainingName) {
-    try {
-      const res = await fetch(
-        WEB_APP_URL + "?action=getQuestions&training=" + encodeURIComponent(trainingName)
-      );
-      const data = await res.json();
-
-      const container = document.getElementById("questions");
-      container.innerHTML = "";
-
-      data.forEach(q => {
-        const div = document.createElement("div");
-        div.className = "question";
-
-        if (q.Question_Type === "Rating") {
-          div.innerHTML = `
-            <label>${q.Question_Text}</label>
-            <select data-id="${q.Question_ID}" required>
-              <option value="">Select</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
-          `;
-        } else {
-          div.innerHTML = `
-            <label>${q.Question_Text}</label>
-            <textarea data-id="${q.Question_ID}" required></textarea>
-          `;
-        }
-
-        container.appendChild(div);
-      });
-    } catch (err) {
-      document.getElementById("msg").innerText = "❌ Failed to load questions";
-      console.error(err);
-    }
-  }
-
-  // ===== EVENTS =====
-  document.getElementById("training").addEventListener("change", function () {
-    if (this.value) {
-      loadQuestions(this.value);
-    } else {
-      document.getElementById("questions").innerHTML = "";
-    }
-  });
-
-  document.getElementById("feedbackForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const msg = document.getElementById("msg");
-    msg.innerText = "Submitting...";
-
-    const feedback = [];
-    document.querySelectorAll("#questions select, #questions textarea").forEach(el => {
-      feedback.push({
-        id: el.dataset.id,
-        answer: el.value
-      });
-    });
-
-    const payload = {
-      name: document.getElementById("name").value,
-      email: document.getElementById("email").value,
-      department: document.getElementById("department").value,
-      designation: document.getElementById("designation").value,
-      training: document.getElementById("training").value,
-      feedback: feedback
-    };
-
-    try {
-      const res = await fetch(WEB_APP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-
-      if (result.status === "success") {
-        msg.innerText =
-          "✔ Submitted successfully! Response ID: " + result.responseId;
-        this.reset();
-        document.getElementById("questions").innerHTML = "";
-      } else {
-        msg.innerText = "❌ " + result.message;
+      if (!username || !password) {
+        msg.textContent = "Username and password required.";
+        msg.className = "msg error";
+        return;
       }
-    } catch (err) {
-      msg.innerText = "❌ Submission failed";
-      console.error(err);
+
+      btn.disabled = true; btn.textContent = "Signing in…"; msg.textContent = "";
+
+      try {
+        const res = await fetch(LOGIN_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (data.status === "ok") {
+          msg.textContent = "Login successful!";
+          msg.className = "msg success";
+          sessionStorage.setItem("user", JSON.stringify(data.user));
+
+          // Role-based redirect
+          if (data.user.Role === "Dean") location.href = "dean.html";
+          else if (data.user.Role === "Faculty") location.href = "faculty.html";
+          else msg.textContent = "Unknown role. Contact admin.";
+        } else {
+          msg.textContent = data.message || "Invalid login.";
+          msg.className = "msg error";
+        }
+      } catch (err) {
+        msg.textContent = "Network error. Try again.";
+        msg.className = "msg error";
+      }
+
+      btn.disabled = false; btn.textContent = "Sign in";
     }
-  });
-
-  loadTrainings();
-</script>
-
+  </script>
 </body>
 </html>
